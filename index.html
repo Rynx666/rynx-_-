@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VELN</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <!-- Глобальный loader для асинхронных действий -->
+  <div id="global-loader" class="global-loader">
+    <div class="loader-spinner"></div>
+  </div>
+
+  <!-- Новый верх: большой логотип + кнопка профиля -->
+  <div class="veln-header-main">
+    <div class="veln-logo-block">
+      <img src="pictures/VELN_Logo/VELN_Logo.png" alt="VELN Logo" class="veln-logo-img">
+    </div>
+    <button class="profile-avatar-btn" id="profile-menu-btn">
+      <img src="" alt="User" class="profile-avatar-img" id="profile-avatar-img">
+    </button>
+  </div>
+
+  <!-- Счетчик очков -->
+  <div class="score-counter-block">
+    <span class="counter-label">Очков:</span>
+    <span id="balance" class="counter-value">0</span>
+  </div>
+
+  <!-- Выпадающее меню профиля -->
+  <div class="profile-menu" id="profile-menu">
+    <button class="profile-menu-close" id="profile-menu-close">&times;</button>
+    <ul>
+      <li><button class="profile-menu-item" data-action="inventory">📦 Инвентарь</button></li>
+      <li><button class="profile-menu-item" data-action="open-case">🎁 Открыть кейс</button></li>
+      <li><button class="profile-menu-item" data-action="top">🏆 Топ</button></li>
+      <li><button class="profile-menu-item" data-action="market">🛒 Рынок</button></li>
+    </ul>
+  </div>
+  <div class="profile-menu-backdrop" id="profile-menu-backdrop"></div>
+
+  <!-- Модалка выпадения предмета -->
+  <div id="drop-modal" class="drop-modal modal hidden">
+    <div class="drop-content" id="drop-content"></div>
+  </div>
+
+  <!-- Кейсы предпросмотр sheet -->
+  <div id="case-preview-sheet" class="case-preview-sheet sheet">
+    <div class="case-preview-header">
+      <div class="case-preview-grabber"></div>
+      <button id="case-preview-close" class="case-preview-close sheet-close">&times;</button>
+      <button id="case-preview-open" class="case-preview-open">Открыть кейс</button>
+    </div>
+    <div id="case-preview-table" class="case-preview-table"></div>
+  </div>
+  <div id="sheet-backdrop" class="sheet-backdrop"></div>
+
+  <!-- Модалка добавления друга -->
+  <div id="add-friend-modal" class="modal hidden">
+    <div class="modal-content card">
+      <button class="modal-close" id="add-friend-close">&times;</button>
+      <h3>Добавить друга</h3>
+      <input type="text" id="friend-username-input" placeholder="Username или ID" class="input">
+      <button class="veln-main-btn" id="add-friend-confirm">Отправить заявку</button>
+      <div id="add-friend-message"></div>
+    </div>
+  </div>
+
+  <!-- Модалка отправки подарка -->
+  <div id="gift-modal" class="modal hidden">
+    <div class="modal-content card">
+      <button class="modal-close" id="gift-modal-close">&times;</button>
+      <h3>Отправить подарок</h3>
+      <div id="gift-modal-friend"></div>
+      <div class="gift-type-selector">
+        <button class="gift-type-btn active" data-type="coin">Монеты</button>
+        <button class="gift-type-btn" data-type="item">Предмет</button>
+      </div>
+      <div id="gift-modal-form-coin" class="gift-form-block">
+        <input type="number" id="gift-coin-amount" placeholder="Сколько монет?" min="1" class="input" />
+        <button class="veln-main-btn" id="gift-send-coin">Отправить монеты</button>
+      </div>
+      <div id="gift-modal-form-item" class="gift-form-block hidden">
+        <select id="gift-item-select" class="input"></select>
+        <button class="veln-main-btn" id="gift-send-item">Отправить предмет</button>
+      </div>
+      <div id="gift-modal-message" style="margin-top:10px; color:var(--accent2);"></div>
+    </div>
+  </div>
+
+  <!-- Модалка продажи предмета на рынке -->
+  <div id="sell-modal" class="modal hidden">
+    <div class="modal-content card">
+      <button class="modal-close" id="sell-modal-close">&times;</button>
+      <h3 style="color:#f7ff00;">Выставить предмет</h3>
+      <select id="sell-item-select" class="input"></select>
+      <input type="number" id="sell-price-input" placeholder="Цена в VC" min="1" class="input"/>
+      <button class="veln-main-btn" id="confirm-sell-btn">Выставить</button>
+      <div id="sell-modal-msg" style="color:var(--accent2);margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <!-- Табы и контент (скрыты, открываются через меню) -->
+  <div class="veln-tabs" id="veln-tabs" style="display:none;">
+    <div id="tab-inventory" class="tab-content hidden card">
+      <div id="inventory" class="inventory-list"></div>
+    </div>
+    <div id="tab-top" class="tab-content hidden card">
+      <div class="top-tabs">
+        <button class="top-tab-btn active" data-top-tab="balance">Топ по очкам</button>
+        <button class="top-tab-btn" data-top-tab="vc">Топ по VELN COIN</button>
+      </div>
+      <ul id="top-list-balance" class="top-list"></ul>
+      <ul id="top-list-vc" class="top-list hidden"></ul>
+    </div>
+    <!-- Друзья -->
+    <div id="tab-friends" class="tab-content hidden card">
+      <div class="friends-header">
+        <button class="veln-main-btn" id="add-friend-btn">Добавить друга</button>
+        <button class="veln-main-btn" id="show-gifts-btn" style="margin-left:10px;">История подарков</button>
+      </div>
+      <!-- Заявки в друзья -->
+      <div class="friends-requests-block" id="friends-requests-block"></div>
+      <ul id="friends-list" class="friends-list"></ul>
+      <!-- История подарков -->
+      <div id="gifts-history-block" class="gifts-history-block hidden" style="position:relative;">
+        <button id="close-gifts-history" class="modal-close" style="position:absolute;top:10px;right:10px;">&times;</button>
+        <!-- Сюда подгружается история подарков -->
+      </div>
+    </div>
+    <!-- Рынок -->
+    <div id="tab-market" class="tab-content hidden card">
+      <h3 class="market-title">
+        <span style="color:#f7ff00;">🛒 Онлайн-рынок предметов</span>
+      </h3>
+      <div class="market-actions">
+        <button id="show-sell-modal" class="veln-main-btn market-sell-btn">+ Выставить предмет на продажу</button>
+      </div>
+      <div id="market-list"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    // Профиль-меню: аватарка и выпадающее меню
+    document.addEventListener("DOMContentLoaded", () => {
+      // Автоматически подставляем telegram аватарку, если есть
+      if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+        const user = Telegram.WebApp.initDataUnsafe.user;
+        const photo = user.photo_url || "https://t.me/i/userpic/320/" + (user.username || "") + ".jpg";
+        document.getElementById("profile-avatar-img").src = photo;
+      }
+      // Открытие меню
+      document.getElementById("profile-menu-btn").onclick = () => {
+        document.getElementById("profile-menu").classList.add("active");
+        document.getElementById("profile-menu-backdrop").classList.add("active");
+      };
+      document.getElementById("profile-menu-close").onclick = () => {
+        document.getElementById("profile-menu").classList.remove("active");
+        document.getElementById("profile-menu-backdrop").classList.remove("active");
+      };
+      document.getElementById("profile-menu-backdrop").onclick = () => {
+        document.getElementById("profile-menu").classList.remove("active");
+        document.getElementById("profile-menu-backdrop").classList.remove("active");
+      };
+      // Навигация по меню
+      document.querySelectorAll('.profile-menu-item').forEach(btn => {
+        btn.onclick = () => {
+          const action = btn.dataset.action;
+          // Показать нужный таб и скрыть остальные, показать блок .veln-tabs
+          document.getElementById("veln-tabs").style.display = "block";
+          document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add("hidden"));
+          if (action === "inventory") {
+            document.getElementById("tab-inventory").classList.remove("hidden");
+          } else if (action === "open-case") {
+            // Открыть кейс: просто открыть предпросмотр кейса (старый open-case-btn)
+            document.getElementById("case-preview-sheet").classList.add("active");
+            document.getElementById("sheet-backdrop").classList.add("active");
+          } else if (action === "top") {
+            document.getElementById("tab-top").classList.remove("hidden");
+          } else if (action === "market") {
+            document.getElementById("tab-market").classList.remove("hidden");
+          }
+          // Скрыть меню после выбора
+          document.getElementById("profile-menu").classList.remove("active");
+          document.getElementById("profile-menu-backdrop").classList.remove("active");
+        };
+      });
+    });
+  </script>
+</body>
+</html>
